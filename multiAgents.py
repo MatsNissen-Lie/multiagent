@@ -483,7 +483,19 @@ def breadthFirstSearch(problem: SearchProblem) -> list[Directions]:
     return []
 
 
-def betterEvaluationFunction(currentGameState: GameState):
+class BestEvaluationFunction:
+    def __init__(self):
+        self.lastPosition = [None] * 2
+
+    def evaluation_function(self, currentGameState: GameState):
+        # shift the last position
+        self.lastPosition[0] = self.lastPosition[1]
+        self.lastPosition[1] = currentGameState.getPacmanPosition()
+        print(self.lastPosition)
+        return betterEvaluationFunction(currentGameState, self.lastPosition[0])
+
+
+def betterEvaluationFunction(currentGameState: GameState, previous_position=None):
     """
     This evaluation function rewards Pacman for progress (eating food and capsules)
     and avoiding ghosts, and it also penalizes Pacman for standing still.
@@ -512,6 +524,7 @@ def betterEvaluationFunction(currentGameState: GameState):
     # 3) Ghost distances: penalize active ghosts if they're close;
     #    encourage chasing if they're scared.
     ghostPenalty = 0
+    ghostBonus = 0
     for ghost in ghostStates:
         dist = manhattanDistance(pacmanPos, ghost.getPosition())
         if dist == 0:
@@ -521,28 +534,22 @@ def betterEvaluationFunction(currentGameState: GameState):
         else:
             if ghost.scaredTimer > 1:
                 # Encourage chasing scared ghosts (closer is better).
-                ghostPenalty -= 300.0 / dist
+                ghostBonus += 300.0 / dist
             else:
                 # If ghost is active and too close, penalize more.
                 if dist < 2:
                     ghostPenalty += 500
                 else:
-                    ghostPenalty += 2.0 / dist
-
-    # 4) Penalize Pacman if he's standing still.
-    pacmanDirection = currentGameState.getPacmanState().configuration.direction
-    stopPenalty = 0
-    if pacmanDirection == Directions.STOP:
-        stopPenalty = 500  # Increase this if you want to penalize more
+                    ghostPenalty += 2.0 / dist**2
 
     finalScore = (
         score
-        - 1.5 * minFoodDist
-        - 1.0 * minCapsuleDist
-        - 10.0 * len(foodList)
-        - 20.0 * len(capsules)
+        - 2 * minFoodDist
+        - 1 * minCapsuleDist
+        - 15.0 * len(foodList)
+        - 30.0 * len(capsules)
         - ghostPenalty
-        - stopPenalty * 4
+        + ghostBonus
     )
 
     return finalScore
@@ -550,3 +557,7 @@ def betterEvaluationFunction(currentGameState: GameState):
 
 # Abbreviation
 better = betterEvaluationFunction
+
+# init the class
+# best_eval = BestEvaluationFunction()
+# better = best_eval.evaluation_function
